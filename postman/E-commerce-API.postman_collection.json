@@ -1,0 +1,150 @@
+{
+    "info": {
+        "_postman_id": "e-commerce-api-collection",
+        "name": "E-commerce API",
+        "description": "API Collection cho Website Đặt Hàng và Quản Lý Đơn Hàng",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001/api",
+            "type": "string"
+        },
+        {
+            "key": "accessToken",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Register",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    console.log('✅ Đăng ký thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('User ID:', response.user.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123\",\n  \"fullName\": \"Nguyễn Văn A\",\n  \"phone\": \"0901234567\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        },
+                        "description": "Đăng ký tài khoản mới\n\n**Response 201:**\n- message: Đăng ký thành công\n- user: thông tin user (không có password)\n\n**Errors:**\n- 400 AUTH_EMAIL_EXISTS: Email đã được sử dụng"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.collectionVariables.set('accessToken', response.accessToken);",
+                                    "    console.log('✅ Đăng nhập thành công!');",
+                                    "    console.log('Token đã được lưu vào biến accessToken');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Đăng nhập và nhận accessToken\n\n**Response 200:**\n- accessToken: JWT token\n- user: thông tin user\n\n**Errors:**\n- 401 AUTH_INVALID_CREDENTIALS: Email hoặc mật khẩu không chính xác\n- 403 AUTH_ACCOUNT_LOCKED: Tài khoản đã bị khóa"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Các API xác thực: đăng ký, đăng nhập"
+        },
+        {
+            "name": "Users",
+            "item": [
+                {
+                    "name": "Get My Profile",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "me"
+                            ]
+                        },
+                        "description": "Xem thông tin cá nhân (chưa implement)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Các API quản lý user"
+        }
+    ]
+}
