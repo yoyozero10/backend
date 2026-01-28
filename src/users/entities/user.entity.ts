@@ -23,4 +23,15 @@ export class User extends BaseEntity {
 
     @Column({ type: 'enum', enum: ['active', 'inactive'], default: 'active' })
     status: string;
+
+    // Refresh Token (hashed)
+    @Column({ nullable: true })
+    refreshToken: string;
+
+    // Password Reset
+    @Column({ nullable: true })
+    passwordResetToken: string;
+
+    @Column({ type: 'datetime', nullable: true })
+    passwordResetExpires: Date;
 }

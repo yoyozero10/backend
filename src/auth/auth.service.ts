@@ -1,8 +1,16 @@
-import { Injectable, ConflictException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import {
+    Injectable,
+    ConflictException,
+    UnauthorizedException,
+    ForbiddenException,
+    BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
-import { RegisterDto, LoginDto } from './dto';
+import { RegisterDto, LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
 import { User } from '../users/entities/user.entity';
 
 @Injectable()
@@ -10,10 +18,11 @@ export class AuthService {
     constructor(
         private usersService: UsersService,
         private jwtService: JwtService,
+        private configService: ConfigService,
     ) { }
 
+    // ==================== REGISTER ====================
     async register(registerDto: RegisterDto): Promise<{ message: string; user: Partial<User> }> {
-        // Check if email exists
         const existingUser = await this.usersService.findByEmail(registerDto.email);
         if (existingUser) {
             throw new ConflictException({
@@ -23,10 +32,8 @@ export class AuthService {
             });
         }
 
-        // Hash password with bcrypt (salt rounds: 10)
         const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-        // Create user
         const user = await this.usersService.create({
             email: registerDto.email,
             password: hashedPassword,
@@ -34,16 +41,15 @@ export class AuthService {
             phone: registerDto.phone,
         });
 
-        // Return user without password
-        const { password, ...userWithoutPassword } = user;
+        const { password, refreshToken, passwordResetToken, passwordResetExpires, ...userWithoutSensitive } = user;
         return {
             message: 'Đăng ký thành công',
-            user: userWithoutPassword,
+            user: userWithoutSensitive,
         };
     }
 
-    async login(loginDto: LoginDto): Promise<{ accessToken: string; user: Partial<User> }> {
-        // Find user by email
+    // ==================== LOGIN ====================
+    async login(loginDto: LoginDto): Promise<{ accessToken: string; refreshToken: string; user: Partial<User> }> {
         const user = await this.usersService.findByEmail(loginDto.email);
         if (!user) {
             throw new UnauthorizedException({
@@ -53,7 +59,6 @@ export class AuthService {
             });
         }
 
-        // Check if account is locked
         if (user.status === 'inactive') {
             throw new ForbiddenException({
                 statusCode: 403,
@@ -62,7 +67,6 @@ export class AuthService {
             });
         }
 
-        // Validate password
         const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
         if (!isPasswordValid) {
             throw new UnauthorizedException({
@@ -72,15 +76,134 @@ export class AuthService {
             });
         }
 
-        // Generate JWT token
+        // Generate tokens
         const payload = { sub: user.id, email: user.email, role: user.role };
         const accessToken = this.jwtService.sign(payload);
+        const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-        // Return token and user without password
-        const { password, ...userWithoutPassword } = user;
+        // Save hashed refresh token to DB
+        const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+        await this.usersService.update(user.id, { refreshToken: hashedRefreshToken });
+
+        const { password, refreshToken: _, passwordResetToken, passwordResetExpires, ...userWithoutSensitive } = user;
         return {
             accessToken,
-            user: userWithoutPassword,
+            refreshToken,
+            user: userWithoutSensitive,
         };
+    }
+
+    // ==================== LOGOUT ====================
+    async logout(userId: string): Promise<{ message: string }> {
+        await this.usersService.update(userId, { refreshToken: null as any });
+        return { message: 'Đăng xuất thành công' };
+    }
+
+    // ==================== REFRESH TOKEN ====================
+    async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<{ accessToken: string }> {
+        try {
+            // Verify the refresh token
+            const payload = this.jwtService.verify(refreshTokenDto.refreshToken);
+
+            const user = await this.usersService.findById(payload.sub);
+            if (!user || !user.refreshToken) {
+                throw new UnauthorizedException({
+                    statusCode: 401,
+                    errorCode: 'AUTH_INVALID_TOKEN',
+                    message: 'Refresh token không hợp lệ',
+                });
+            }
+
+            // Verify refresh token matches
+            const isTokenValid = await bcrypt.compare(refreshTokenDto.refreshToken, user.refreshToken);
+            if (!isTokenValid) {
+                throw new UnauthorizedException({
+                    statusCode: 401,
+                    errorCode: 'AUTH_INVALID_TOKEN',
+                    message: 'Refresh token không hợp lệ',
+                });
+            }
+
+            // Generate new access token
+            const newPayload = { sub: user.id, email: user.email, role: user.role };
+            const accessToken = this.jwtService.sign(newPayload);
+
+            return { accessToken };
+        } catch (error) {
+            throw new UnauthorizedException({
+                statusCode: 401,
+                errorCode: 'AUTH_INVALID_TOKEN',
+                message: 'Refresh token không hợp lệ hoặc đã hết hạn',
+            });
+        }
+    }
+
+    // ==================== FORGOT PASSWORD ====================
+    async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
+        const user = await this.usersService.findByEmail(forgotPasswordDto.email);
+
+        // Always return success to prevent email enumeration
+        if (!user) {
+            return { message: 'Nếu email tồn tại, bạn sẽ nhận được link đặt lại mật khẩu' };
+        }
+
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+        // Save token with 15 minute expiry
+        const expires = new Date();
+        expires.setMinutes(expires.getMinutes() + 15);
+
+        await this.usersService.update(user.id, {
+            passwordResetToken: hashedToken,
+            passwordResetExpires: expires,
+        });
+
+        // Mock email sending (console.log)
+        console.log('================================================');
+        console.log('📧 [MOCK EMAIL] Password Reset Request');
+        console.log(`To: ${user.email}`);
+        console.log(`Reset Token: ${resetToken}`);
+        console.log(`Expires: ${expires.toISOString()}`);
+        console.log('================================================');
+
+        return { message: 'Nếu email tồn tại, bạn sẽ nhận được link đặt lại mật khẩu' };
+    }
+
+    // ==================== RESET PASSWORD ====================
+    async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+        // Hash the token to compare with DB
+        const hashedToken = crypto.createHash('sha256').update(resetPasswordDto.token).digest('hex');
+
+        const user = await this.usersService.findByPasswordResetToken(hashedToken);
+
+        if (!user) {
+            throw new BadRequestException({
+                statusCode: 400,
+                errorCode: 'AUTH_INVALID_RESET_TOKEN',
+                message: 'Token không hợp lệ hoặc đã hết hạn',
+            });
+        }
+
+        // Check if token is expired
+        if (!user.passwordResetExpires || user.passwordResetExpires < new Date()) {
+            throw new BadRequestException({
+                statusCode: 400,
+                errorCode: 'AUTH_RESET_TOKEN_EXPIRED',
+                message: 'Token đã hết hạn, vui lòng yêu cầu lại',
+            });
+        }
+
+        // Hash new password and update
+        const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
+
+        await this.usersService.update(user.id, {
+            password: hashedPassword,
+            passwordResetToken: null as any,
+            passwordResetExpires: null as any,
+        });
+
+        return { message: 'Đặt lại mật khẩu thành công' };
     }
 }

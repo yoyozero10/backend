@@ -22,4 +22,13 @@ export class UsersService {
         const user = this.usersRepository.create(userData);
         return this.usersRepository.save(user);
     }
+
+    async update(id: string, userData: Partial<User>): Promise<User | null> {
+        await this.usersRepository.update(id, userData);
+        return this.findById(id);
+    }
+
+    async findByPasswordResetToken(token: string): Promise<User | null> {
+        return this.usersRepository.findOne({ where: { passwordResetToken: token } });
+    }
 }

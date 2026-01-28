@@ -15,6 +15,11 @@
             "key": "accessToken",
             "value": "",
             "type": "string"
+        },
+        {
+            "key": "refreshToken",
+            "value": "",
+            "type": "string"
         }
     ],
     "item": [
@@ -22,7 +27,7 @@
             "name": "Authentication",
             "item": [
                 {
-                    "name": "Register",
+                    "name": "1. Register",
                     "event": [
                         {
                             "listen": "test",
@@ -60,12 +65,12 @@
                                 "register"
                             ]
                         },
-                        "description": "Đăng ký tài khoản mới\n\n**Response 201:**\n- message: Đăng ký thành công\n- user: thông tin user (không có password)\n\n**Errors:**\n- 400 AUTH_EMAIL_EXISTS: Email đã được sử dụng"
+                        "description": "Đăng ký tài khoản mới\n\n**Response 201:**\n- message: Đăng ký thành công\n- user: thông tin user\n\n**Errors:**\n- 400 AUTH_EMAIL_EXISTS"
                     },
                     "response": []
                 },
                 {
-                    "name": "Login",
+                    "name": "2. Login",
                     "event": [
                         {
                             "listen": "test",
@@ -74,8 +79,10 @@
                                     "if (pm.response.code === 200) {",
                                     "    const response = pm.response.json();",
                                     "    pm.collectionVariables.set('accessToken', response.accessToken);",
+                                    "    pm.collectionVariables.set('refreshToken', response.refreshToken);",
                                     "    console.log('✅ Đăng nhập thành công!');",
-                                    "    console.log('Token đã được lưu vào biến accessToken');",
+                                    "    console.log('Access Token đã được lưu');",
+                                    "    console.log('Refresh Token đã được lưu');",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -104,12 +111,140 @@
                                 "login"
                             ]
                         },
-                        "description": "Đăng nhập và nhận accessToken\n\n**Response 200:**\n- accessToken: JWT token\n- user: thông tin user\n\n**Errors:**\n- 401 AUTH_INVALID_CREDENTIALS: Email hoặc mật khẩu không chính xác\n- 403 AUTH_ACCOUNT_LOCKED: Tài khoản đã bị khóa"
+                        "description": "Đăng nhập và nhận tokens\n\n**Response 200:**\n- accessToken: JWT access token\n- refreshToken: JWT refresh token\n- user: thông tin user\n\n**Errors:**\n- 401 AUTH_INVALID_CREDENTIALS\n- 403 AUTH_ACCOUNT_LOCKED"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "3. Logout",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "logout"
+                            ]
+                        },
+                        "description": "Đăng xuất (xóa refresh token)\n\n**Yêu cầu:** Bearer token\n\n**Response 200:**\n- message: Đăng xuất thành công"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "4. Refresh Token",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.collectionVariables.set('accessToken', response.accessToken);",
+                                    "    console.log('✅ Access token đã được làm mới!');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/refresh",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "refresh"
+                            ]
+                        },
+                        "description": "Làm mới access token\n\n**Response 200:**\n- accessToken: JWT token mới\n\n**Errors:**\n- 401 AUTH_INVALID_TOKEN"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "5. Forgot Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/forgot-password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "forgot-password"
+                            ]
+                        },
+                        "description": "Yêu cầu đặt lại mật khẩu\n\n**Response 200:**\n- message: Nếu email tồn tại...\n\n**Note:** Kiểm tra console server để lấy reset token"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "6. Reset Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"PASTE_TOKEN_FROM_CONSOLE_HERE\",\n  \"newPassword\": \"NewPassword123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/reset-password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "reset-password"
+                            ]
+                        },
+                        "description": "Đặt lại mật khẩu với token\n\n**Response 200:**\n- message: Đặt lại mật khẩu thành công\n\n**Errors:**\n- 400 AUTH_INVALID_RESET_TOKEN\n- 400 AUTH_RESET_TOKEN_EXPIRED"
                     },
                     "response": []
                 }
             ],
-            "description": "Các API xác thực: đăng ký, đăng nhập"
+            "description": "Các API xác thực"
         },
         {
             "name": "Users",
