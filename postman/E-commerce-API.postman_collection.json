@@ -250,7 +250,22 @@
             "name": "Users",
             "item": [
                 {
-                    "name": "Get My Profile",
+                    "name": "7. Get My Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Lấy profile thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('User:', response.fullName);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "auth": {
                             "type": "bearer",
@@ -274,12 +289,117 @@
                                 "me"
                             ]
                         },
-                        "description": "Xem thông tin cá nhân (chưa implement)"
+                        "description": "Lấy thông tin profile của user đang đăng nhập\n\n**Yêu cầu:** Bearer token\n\n**Response 200:**\n- id, email, fullName, phone, avatar, role, status, createdAt, updatedAt\n- Password KHÔNG được trả về\n\n**Errors:**\n- 401 AUTH_UNAUTHORIZED"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "8. Update My Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Cập nhật profile thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('New Name:', response.fullName);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fullName\": \"Nguyễn Văn B\",\n  \"phone\": \"0909123456\",\n  \"avatar\": \"https://example.com/avatar.jpg\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "me"
+                            ]
+                        },
+                        "description": "Cập nhật thông tin profile\n\n**Yêu cầu:** Bearer token\n\n**Body (tất cả optional):**\n- fullName: string (max 100)\n- phone: string (max 20)\n- avatar: string URL (max 500)\n\n**Không cho phép update:** email, role, status\n\n**Response 200:** User object đã cập nhật\n\n**Errors:**\n- 401 AUTH_UNAUTHORIZED\n- 400 Validation Error"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "9. Change Password",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Đổi mật khẩu thành công!');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"oldPassword\": \"Password123\",\n  \"newPassword\": \"NewPassword456\",\n  \"confirmPassword\": \"NewPassword456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/users/me/password",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "me",
+                                "password"
+                            ]
+                        },
+                        "description": "Đổi mật khẩu\n\n**Yêu cầu:** Bearer token\n\n**Body:**\n- oldPassword: string (required)\n- newPassword: string (required, min 6)\n- confirmPassword: string (required, phải khớp)\n\n**Response 200:**\n- message: Đổi mật khẩu thành công\n\n**Errors:**\n- 401 AUTH_UNAUTHORIZED\n- 400 USER_INVALID_PASSWORD (mật khẩu cũ sai)\n- 400 USER_PASSWORD_MISMATCH (confirm không khớp)\n- 400 Validation Error"
                     },
                     "response": []
                 }
             ],
-            "description": "Các API quản lý user"
+            "description": "Các API quản lý thông tin user cá nhân"
         }
     ]
 }
