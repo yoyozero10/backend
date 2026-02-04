@@ -400,6 +400,45 @@
                 }
             ],
             "description": "Các API quản lý thông tin user cá nhân"
+        },
+        {
+            "name": "Categories",
+            "item": [
+                {
+                    "name": "10. Get All Categories",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Lấy danh sách categories thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('Số lượng categories:', response.length);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "categories"
+                            ]
+                        },
+                        "description": "Lấy danh sách tất cả categories\n\n**Public API** - Không cần authentication\n\n**Response 200:**\n- Array of categories\n- Mỗi category có productCount\n- Sắp xếp theo name"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Các API liên quan đến danh mục sản phẩm"
         }
     ]
 }
