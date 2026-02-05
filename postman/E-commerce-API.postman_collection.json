@@ -439,6 +439,122 @@
                 }
             ],
             "description": "Các API liên quan đến danh mục sản phẩm"
+        },
+        {
+            "name": "Products",
+            "item": [
+                {
+                    "name": "11. Get Products List",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Lấy danh sách products thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('Total:', response.meta.total);",
+                                    "    console.log('Page:', response.meta.page + '/' + response.meta.totalPages);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/products?page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "products"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "categoryId",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "minPrice",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "maxPrice",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "sortBy",
+                                    "value": "newest",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Lấy danh sách sản phẩm với pagination, search, filter, sort\n\n**Public API**\n\n**Query Params:**\n- page (default: 1)\n- limit (default: 10)\n- search: tìm theo tên/mô tả\n- categoryId: lọc theo danh mục\n- minPrice, maxPrice: lọc theo giá\n- sortBy: price_asc, price_desc, newest, name_asc"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "12. Get Product Detail",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Lấy chi tiết product thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('Product:', response.name);",
+                                    "    console.log('Images:', response.images.length);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/products/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "products",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "product-uuid-here"
+                                }
+                            ]
+                        },
+                        "description": "Lấy chi tiết sản phẩm với tất cả images\n\n**Public API**\n\n**Path Params:**\n- id: UUID của product\n\n**Response 200:** Product với category và images\n\n**Errors:**\n- 404 PRODUCT_NOT_FOUND"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Các API liên quan đến sản phẩm"
         }
     ]
 }
