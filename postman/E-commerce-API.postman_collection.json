@@ -555,6 +555,56 @@
                 }
             ],
             "description": "Các API liên quan đến sản phẩm"
+        },
+        {
+            "name": "Cart",
+            "item": [
+                {
+                    "name": "13. Get Cart",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Lấy giỏ hàng thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('Total Items:', response.totalItems);",
+                                    "    console.log('Total Amount:', response.totalAmount);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/cart",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "cart"
+                            ]
+                        },
+                        "description": "Lấy giỏ hàng của user hiện tại\n\n**Protected API** - Yêu cầu Bearer token\n\n**Response 200:**\n- id: Cart ID\n- items: Array cart items với product details và subtotal\n- totalItems: Tổng số lượng sản phẩm\n- totalAmount: Tổng tiền"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Các API liên quan đến giỏ hàng"
         }
     ]
 }
