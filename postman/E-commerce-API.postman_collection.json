@@ -99,7 +99,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123\"\n}"
+                            "raw": "{\n  \"email\": \"thang@gmail.com\",\n  \"password\": \"123456\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/auth/login",
@@ -600,6 +600,209 @@
                             ]
                         },
                         "description": "Lấy giỏ hàng của user hiện tại\n\n**Protected API** - Yêu cầu Bearer token\n\n**Response 200:**\n- id: Cart ID\n- items: Array cart items với product details và subtotal\n- totalItems: Tổng số lượng sản phẩm\n- totalAmount: Tổng tiền"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "14. Add to Cart",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    console.log('✅ Thêm vào giỏ hàng thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('Total Items:', response.totalItems);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"productId\": \"product-uuid-here\",\n  \"quantity\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/cart/items",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "cart",
+                                "items"
+                            ]
+                        },
+                        "description": "Thêm sản phẩm vào giỏ hàng\n\n**Protected API**\n\n**Body:**\n- productId: UUID sản phẩm\n- quantity: số lượng (min 1)\n\n**Errors:**\n- 404 PRODUCT_NOT_FOUND\n- 400 CART_OUT_OF_STOCK"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "15. Update Cart Item",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Cập nhật giỏ hàng thành công!');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"quantity\": 2\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/cart/items/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "cart",
+                                "items",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "cart-item-uuid"
+                                }
+                            ]
+                        },
+                        "description": "Cập nhật số lượng cart item\n\n**Protected API**\n\n**Body:**\n- quantity: số lượng mới (min 1)\n\n**Errors:**\n- 404 CART_ITEM_NOT_FOUND\n- 403 CART_FORBIDDEN\n- 400 CART_OUT_OF_STOCK"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "16. Remove Cart Item",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Đã xóa sản phẩm khỏi giỏ hàng!');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/cart/items/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "cart",
+                                "items",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "cart-item-uuid"
+                                }
+                            ]
+                        },
+                        "description": "Xóa một sản phẩm khỏi giỏ hàng\n\n**Protected API**\n\n**Path Params:**\n- id: Cart item UUID\n\n**Errors:**\n- 404 CART_ITEM_NOT_FOUND\n- 403 CART_FORBIDDEN"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "17. Clear Cart",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Đã xóa toàn bộ giỏ hàng!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('Message:', response.message);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/cart",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "cart"
+                            ]
+                        },
+                        "description": "Xóa toàn bộ giỏ hàng\n\n**Protected API**\n\n**Response 200:**\n- message: Đã xóa toàn bộ giỏ hàng"
                     },
                     "response": []
                 }
