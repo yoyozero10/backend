@@ -808,6 +808,66 @@
                 }
             ],
             "description": "Các API liên quan đến giỏ hàng"
+        },
+        {
+            "name": "Orders",
+            "item": [
+                {
+                    "name": "18. Create Order",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    console.log('✅ Đặt hàng thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('Order Code:', response.orderCode);",
+                                    "    console.log('Total:', response.totalAmount);",
+                                    "    pm.collectionVariables.set('orderId', response.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"shippingAddress\": {\n    \"fullName\": \"Nguyễn Văn A\",\n    \"phone\": \"0901234567\",\n    \"address\": \"123 Đường ABC\",\n    \"ward\": \"Phường 1\",\n    \"district\": \"Quận 1\",\n    \"city\": \"Hồ Chí Minh\"\n  },\n  \"paymentMethod\": \"COD\",\n  \"note\": \"Giao giờ hành chính\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "orders"
+                            ]
+                        },
+                        "description": "Tạo đơn hàng từ giỏ hàng\n\n**Protected API**\n\n**Body:**\n- shippingAddress: { fullName, phone, address, ward, district, city }\n- paymentMethod: COD | MOCK (default: COD)\n- note: ghi chú (optional)\n\n**Flow:**\n1. Validate giỏ hàng không trống\n2. Lock + check stock từng sản phẩm\n3. Tạo order + snapshots\n4. Trừ stock\n5. Xóa giỏ hàng\n\n**Errors:**\n- 400 ORDER_CART_EMPTY\n- 400 CART_OUT_OF_STOCK\n- 400 ORDER_PRODUCT_NOT_FOUND"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Các API liên quan đến đơn hàng"
         }
     ]
 }
