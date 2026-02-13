@@ -865,6 +865,159 @@
                         "description": "Tạo đơn hàng từ giỏ hàng\n\n**Protected API**\n\n**Body:**\n- shippingAddress: { fullName, phone, address, ward, district, city }\n- paymentMethod: COD | MOCK (default: COD)\n- note: ghi chú (optional)\n\n**Flow:**\n1. Validate giỏ hàng không trống\n2. Lock + check stock từng sản phẩm\n3. Tạo order + snapshots\n4. Trừ stock\n5. Xóa giỏ hàng\n\n**Errors:**\n- 400 ORDER_CART_EMPTY\n- 400 CART_OUT_OF_STOCK\n- 400 ORDER_PRODUCT_NOT_FOUND"
                     },
                     "response": []
+                },
+                {
+                    "name": "19. Get My Orders",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Lấy danh sách đơn hàng thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('Total:', response.meta.total);",
+                                    "    console.log('Page:', response.meta.page + '/' + response.meta.totalPages);",
+                                    "    if (response.data.length > 0) {",
+                                    "        pm.collectionVariables.set('orderId', response.data[0].id);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/orders?page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "orders"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "orderStatus",
+                                    "value": "pending",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Lấy danh sách đơn hàng của user\n\n**Protected API**\n\n**Query Params:**\n- page (default: 1)\n- limit (default: 10)\n- orderStatus: pending | processing | shipping | completed | cancelled (optional)\n\n**Response:** Danh sách summary (không có items), sắp xếp theo ngày tạo mới nhất"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "20. Get Order Detail",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Lấy chi tiết đơn hàng thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('Order Code:', response.orderCode);",
+                                    "    console.log('Items:', response.items.length);",
+                                    "    console.log('Status History:', response.statusHistory.length);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/orders/{{orderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "orders",
+                                "{{orderId}}"
+                            ]
+                        },
+                        "description": "Lấy chi tiết đơn hàng với items và status history\n\n**Protected API**\n\n**Path Params:**\n- id: Order UUID\n\n**Response:** Full order với items (snapshots), status history\n\n**Errors:**\n- 404 ORDER_NOT_FOUND\n- 403 FORBIDDEN_RESOURCE"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "21. Cancel Order",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    console.log('✅ Hủy đơn hàng thành công!');",
+                                    "    const response = pm.response.json();",
+                                    "    console.log('Order Status:', response.orderStatus);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/orders/{{orderId}}/cancel",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "orders",
+                                "{{orderId}}",
+                                "cancel"
+                            ]
+                        },
+                        "description": "Hủy đơn hàng\n\n**Protected API**\n\n**Path Params:**\n- id: Order UUID\n\n**Điều kiện:** Chỉ hủy được khi status = pending\n\n**Flow:**\n1. Validate order thuộc user\n2. Check status = pending\n3. Update status → cancelled\n4. Hoàn stock cho từng sản phẩm\n5. Ghi status history\n\n**Errors:**\n- 404 ORDER_NOT_FOUND\n- 403 FORBIDDEN_RESOURCE\n- 400 ORDER_INVALID_TRANSITION"
+                    },
+                    "response": []
                 }
             ],
             "description": "Các API liên quan đến đơn hàng"

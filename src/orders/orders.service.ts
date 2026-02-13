@@ -1,11 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Order, OrderItem, OrderStatusHistory } from './entities';
 import { Cart } from '../cart/entities';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Product } from '../products/entities/product.entity';
-import { CreateOrderDto } from './dto';
+import { CreateOrderDto, GetOrdersDto } from './dto';
 
 @Injectable()
 export class OrdersService {
@@ -177,6 +177,181 @@ export class OrdersService {
             });
 
             return this.formatOrderResponse(createdOrder!);
+        });
+    }
+
+    /**
+     * API 19/37: GET /orders [MVP]
+     * Lấy danh sách đơn hàng của user hiện tại
+     * - Filter by user (current user only)
+     * - Pagination
+     * - Filter by status (optional)
+     * - Order by createdAt DESC
+     * - Return summary (no items)
+     */
+    async getMyOrders(userId: string, query: GetOrdersDto): Promise<any> {
+        const { page = 1, limit = 10, orderStatus } = query;
+
+        const qb = this.orderRepository
+            .createQueryBuilder('order')
+            .where('order.userId = :userId', { userId })
+            .orderBy('order.createdAt', 'DESC');
+
+        // Filter by status (optional)
+        if (orderStatus) {
+            qb.andWhere('order.orderStatus = :orderStatus', { orderStatus });
+        }
+
+        // Pagination
+        const total = await qb.getCount();
+        const orders = await qb
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getMany();
+
+        return {
+            data: orders.map(order => ({
+                id: order.id,
+                orderCode: order.orderCode,
+                totalAmount: Number(order.totalAmount),
+                paymentMethod: order.paymentMethod,
+                paymentStatus: order.paymentStatus,
+                orderStatus: order.orderStatus,
+                createdAt: order.createdAt,
+                updatedAt: order.updatedAt,
+            })),
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
+
+    /**
+     * API 20/37: GET /orders/:id [MVP]
+     * Lấy chi tiết đơn hàng
+     * - Validate order belongs to user
+     * - Return full order with items
+     * - Include status history [Optional]
+     */
+    async getOrderById(userId: string, orderId: string): Promise<any> {
+        const order = await this.orderRepository.findOne({
+            where: { id: orderId },
+            relations: ['items', 'items.product', 'user'],
+        });
+
+        if (!order) {
+            throw new NotFoundException({
+                statusCode: 404,
+                errorCode: 'ORDER_NOT_FOUND',
+                message: 'Không tìm thấy đơn hàng',
+            });
+        }
+
+        // Validate order belongs to user
+        if (order.user.id !== userId) {
+            throw new ForbiddenException({
+                statusCode: 403,
+                errorCode: 'FORBIDDEN_RESOURCE',
+                message: 'Bạn không có quyền xem đơn hàng này',
+            });
+        }
+
+        // Include status history [Optional]
+        const statusHistory = await this.orderStatusHistoryRepository.find({
+            where: { order: { id: orderId } },
+            order: { createdAt: 'ASC' },
+        });
+
+        const response = this.formatOrderResponse(order);
+        response.statusHistory = statusHistory.map(h => ({
+            id: h.id,
+            fromStatus: h.fromStatus,
+            toStatus: h.toStatus,
+            note: h.note,
+            changedBy: h.changedBy,
+            createdAt: h.createdAt,
+        }));
+
+        return response;
+    }
+
+    /**
+     * API 21/37: PUT /orders/:id/cancel [Optional]
+     * Hủy đơn hàng
+     * - Validate order belongs to user
+     * - Check status = 'pending'
+     * - Transaction: update status + restore stock + status history
+     */
+    async cancelOrder(userId: string, orderId: string): Promise<any> {
+        return await this.dataSource.transaction(async manager => {
+            // Lấy order với items
+            const order = await manager.findOne(Order, {
+                where: { id: orderId },
+                relations: ['items', 'items.product', 'user'],
+                lock: { mode: 'pessimistic_write' },
+            });
+
+            if (!order) {
+                throw new NotFoundException({
+                    statusCode: 404,
+                    errorCode: 'ORDER_NOT_FOUND',
+                    message: 'Không tìm thấy đơn hàng',
+                });
+            }
+
+            // Validate order belongs to user
+            if (order.user.id !== userId) {
+                throw new ForbiddenException({
+                    statusCode: 403,
+                    errorCode: 'FORBIDDEN_RESOURCE',
+                    message: 'Bạn không có quyền hủy đơn hàng này',
+                });
+            }
+
+            // Check status = 'pending' only
+            if (order.orderStatus !== 'pending') {
+                throw new BadRequestException({
+                    statusCode: 400,
+                    errorCode: 'ORDER_INVALID_TRANSITION',
+                    message: `Không thể hủy đơn hàng ở trạng thái "${order.orderStatus}". Chỉ được hủy khi đang "pending"`,
+                });
+            }
+
+            // Update status to 'cancelled'
+            const oldStatus = order.orderStatus;
+            order.orderStatus = 'cancelled';
+            await manager.save(order);
+
+            // Restore stock (atomic update)
+            for (const item of order.items) {
+                await manager
+                    .createQueryBuilder()
+                    .update(Product)
+                    .set({ stock: () => `stock + ${item.quantity}` })
+                    .where('id = :id', { id: item.product.id })
+                    .execute();
+            }
+
+            // Create status history
+            const statusHistory = manager.create(OrderStatusHistory, {
+                order: { id: orderId } as Order,
+                fromStatus: oldStatus,
+                toStatus: 'cancelled',
+                note: 'Người dùng hủy đơn hàng',
+                changedBy: userId,
+            });
+            await manager.save(statusHistory);
+
+            // Return updated order
+            const updatedOrder = await manager.findOne(Order, {
+                where: { id: orderId },
+                relations: ['items', 'items.product'],
+            });
+
+            return this.formatOrderResponse(updatedOrder!);
         });
     }
 
