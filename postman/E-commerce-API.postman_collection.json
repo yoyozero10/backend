@@ -1021,6 +1021,191 @@
                 }
             ],
             "description": "Các API liên quan đến đơn hàng"
+        },
+        {
+            "name": "Admin - Products",
+            "item": [
+                {
+                    "name": "22. Create Product",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Sản phẩm test\",\n  \"description\": \"Mô tả sản phẩm test\",\n  \"price\": 99000,\n  \"stock\": 50,\n  \"categoryId\": \"{{categoryId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/products",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "products"
+                            ]
+                        },
+                        "description": "Tạo sản phẩm mới\n\n**Admin only** - Cần @Roles('admin')\n\n**Body:**\n- name, description, price, stock, categoryId (required)\n- status: active | inactive (optional, default: active)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "23. Update Product",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Tên mới\",\n  \"price\": 199000\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/products/{{productId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "products",
+                                "{{productId}}"
+                            ]
+                        },
+                        "description": "Cập nhật sản phẩm\n\n**Admin only**\n\n**Body:** Tất cả fields optional\n- name, description, price, stock, categoryId, status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "24. Delete Product",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/products/{{productId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "products",
+                                "{{productId}}"
+                            ]
+                        },
+                        "description": "Xóa sản phẩm (hard delete)\n\n**Admin only**\n\nImages tự động cascade delete"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "25. Add Product Image",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"imageUrl\": \"https://example.com/image.jpg\",\n  \"isPrimary\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/products/{{productId}}/images",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "products",
+                                "{{productId}}",
+                                "images"
+                            ]
+                        },
+                        "description": "Thêm ảnh cho sản phẩm\n\n**Admin only**\n\n**Body:**\n- imageUrl (required)\n- isPrimary (optional, auto true nếu ảnh đầu tiên)\n- displayOrder (optional)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "26. Delete Product Image",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/products/{{productId}}/images/{{imageId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "products",
+                                "{{productId}}",
+                                "images",
+                                "{{imageId}}"
+                            ]
+                        },
+                        "description": "Xóa ảnh sản phẩm\n\n**Admin only**\n\nNếu xóa ảnh primary → tự động set ảnh khác làm primary"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Quản lý sản phẩm - Admin only (cần role admin)"
         }
     ]
 }
