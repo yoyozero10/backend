@@ -5,10 +5,20 @@ import { Order, OrderItem, OrderStatusHistory } from './entities';
 import { Cart } from '../cart/entities';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Product } from '../products/entities/product.entity';
-import { CreateOrderDto, GetOrdersDto } from './dto';
+import { User } from '../users/entities/user.entity';
+import { CreateOrderDto, GetOrdersDto, GetAdminOrdersDto, UpdateOrderStatusDto } from './dto';
 
 @Injectable()
 export class OrdersService {
+    // Allowed state transitions
+    private static readonly ALLOWED_TRANSITIONS: Record<string, string[]> = {
+        pending: ['processing', 'cancelled'],
+        processing: ['shipping', 'cancelled'],
+        shipping: ['completed'],
+        completed: [],
+        cancelled: [],
+    };
+
     constructor(
         @InjectRepository(Order)
         private orderRepository: Repository<Order>,
@@ -20,6 +30,8 @@ export class OrdersService {
         private cartRepository: Repository<Cart>,
         @InjectRepository(Product)
         private productRepository: Repository<Product>,
+        @InjectRepository(User)
+        private userRepository: Repository<User>,
         private dataSource: DataSource,
     ) { }
 
@@ -355,6 +367,117 @@ export class OrdersService {
         });
     }
 
+    // =============================================
+    // ADMIN METHODS
+    // =============================================
+
+    /**
+     * API 30/37: GET /admin/orders [MVP]
+     * Lấy tất cả đơn hàng (admin)
+     * - Không filter theo user
+     * - Pagination, filter by status, search
+     */
+    async getAllOrders(query: GetAdminOrdersDto): Promise<any> {
+        const { page = 1, limit = 10, orderStatus, search } = query;
+
+        const qb = this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoin('order.user', 'user')
+            .addSelect(['user.id', 'user.fullName', 'user.email'])
+            .orderBy('order.createdAt', 'DESC');
+
+        // Filter by status
+        if (orderStatus) {
+            qb.andWhere('order.orderStatus = :orderStatus', { orderStatus });
+        }
+
+        // Search by order code or customer name
+        if (search) {
+            qb.andWhere(
+                '(order.orderCode LIKE :search OR user.fullName LIKE :search)',
+                { search: `%${search}%` },
+            );
+        }
+
+        const total = await qb.getCount();
+        const orders = await qb
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getMany();
+
+        return {
+            data: orders.map(order => ({
+                id: order.id,
+                orderCode: order.orderCode,
+                totalAmount: Number(order.totalAmount),
+                paymentMethod: order.paymentMethod,
+                paymentStatus: order.paymentStatus,
+                orderStatus: order.orderStatus,
+                customer: order.user ? {
+                    id: order.user.id,
+                    fullName: order.user.fullName,
+                    email: order.user.email,
+                } : null,
+                createdAt: order.createdAt,
+                updatedAt: order.updatedAt,
+            })),
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
+
+    /**
+     * API 31/37: GET /admin/orders/:id [MVP]
+     * Lấy chi tiết đơn hàng (admin) - không cần validate ownership
+     * - Include customer info
+     * - Include status history
+     */
+    async getAdminOrderById(orderId: string): Promise<any> {
+        const order = await this.orderRepository.findOne({
+            where: { id: orderId },
+            relations: ['items', 'items.product', 'user'],
+        });
+
+        if (!order) {
+            throw new NotFoundException({
+                statusCode: 404,
+                errorCode: 'ORDER_NOT_FOUND',
+                message: 'Không tìm thấy đơn hàng',
+            });
+        }
+
+        // Include status history
+        const statusHistory = await this.orderStatusHistoryRepository.find({
+            where: { order: { id: orderId } },
+            order: { createdAt: 'ASC' },
+        });
+
+        const response = this.formatOrderResponse(order);
+
+        // Add customer info
+        response.customer = order.user ? {
+            id: order.user.id,
+            fullName: order.user.fullName,
+            email: order.user.email,
+            phone: order.user.phone,
+        } : null;
+
+        response.statusHistory = statusHistory.map(h => ({
+            id: h.id,
+            fromStatus: h.fromStatus,
+            toStatus: h.toStatus,
+            note: h.note,
+            changedBy: h.changedBy,
+            createdAt: h.createdAt,
+        }));
+
+        return response;
+    }
+
     /**
      * Format order response
      */
@@ -380,6 +503,130 @@ export class OrdersService {
             })) || [],
             createdAt: order.createdAt,
             updatedAt: order.updatedAt,
+        };
+    }
+
+    /**
+     * API 32/37: PUT /admin/orders/:id/status [MVP]
+     * Cập nhật trạng thái đơn hàng (admin)
+     */
+    async updateOrderStatus(orderId: string, adminId: string, dto: UpdateOrderStatusDto): Promise<any> {
+        return await this.dataSource.transaction(async manager => {
+            const order = await manager.findOne(Order, {
+                where: { id: orderId },
+                relations: ['items', 'items.product', 'user'],
+                lock: { mode: 'pessimistic_write' },
+            });
+
+            if (!order) {
+                throw new NotFoundException({
+                    statusCode: 404,
+                    errorCode: 'ORDER_NOT_FOUND',
+                    message: 'Không tìm thấy đơn hàng',
+                });
+            }
+
+            // Validate state transition
+            const allowedNextStatuses = OrdersService.ALLOWED_TRANSITIONS[order.orderStatus] || [];
+            if (!allowedNextStatuses.includes(dto.status)) {
+                throw new BadRequestException({
+                    statusCode: 400,
+                    errorCode: 'ORDER_INVALID_TRANSITION',
+                    message: `Không thể chuyển trạng thái từ "${order.orderStatus}" sang "${dto.status}". Cho phép: ${allowedNextStatuses.join(', ') || 'không có'}`,
+                });
+            }
+
+            const oldStatus = order.orderStatus;
+            order.orderStatus = dto.status;
+
+            // Nếu chuyển sang completed → update paymentStatus
+            if (dto.status === 'completed' && order.paymentMethod === 'COD') {
+                order.paymentStatus = 'paid';
+            }
+
+            // Nếu cancelled → restore stock
+            if (dto.status === 'cancelled') {
+                for (const item of order.items) {
+                    await manager
+                        .createQueryBuilder()
+                        .update(Product)
+                        .set({ stock: () => `stock + ${item.quantity}` })
+                        .where('id = :id', { id: item.product.id })
+                        .execute();
+                }
+            }
+
+            await manager.save(order);
+
+            // Create status history
+            const history = manager.create(OrderStatusHistory, {
+                order: { id: orderId } as Order,
+                fromStatus: oldStatus,
+                toStatus: dto.status,
+                note: dto.note || `Admin chuyển trạng thái từ ${oldStatus} sang ${dto.status}`,
+                changedBy: adminId,
+            });
+            await manager.save(history);
+
+            // Return updated order
+            const updatedOrder = await manager.findOne(Order, {
+                where: { id: orderId },
+                relations: ['items', 'items.product'],
+            });
+
+            return this.formatOrderResponse(updatedOrder!);
+        });
+    }
+
+    /**
+     * API 33/37: GET /admin/orders/stats [MVP]
+     * Thống kê đơn hàng
+     */
+    async getOrderStats(): Promise<any> {
+        // Total orders
+        const totalOrders = await this.orderRepository.count();
+
+        // Total revenue (completed orders only)
+        const revenueResult = await this.orderRepository
+            .createQueryBuilder('order')
+            .select('SUM(order.totalAmount)', 'totalRevenue')
+            .where('order.orderStatus = :status', { status: 'completed' })
+            .getRawOne();
+
+        // Orders by status
+        const statusCounts = await this.orderRepository
+            .createQueryBuilder('order')
+            .select('order.orderStatus', 'status')
+            .addSelect('COUNT(*)', 'count')
+            .groupBy('order.orderStatus')
+            .getRawMany();
+
+        const ordersByStatus: Record<string, number> = {};
+        statusCounts.forEach(row => {
+            ordersByStatus[row.status] = parseInt(row.count);
+        });
+
+        // Revenue by month (last 6 months)
+        const revenueByMonth = await this.orderRepository
+            .createQueryBuilder('order')
+            .select("DATE_FORMAT(order.createdAt, '%Y-%m')", 'month')
+            .addSelect('SUM(order.totalAmount)', 'revenue')
+            .addSelect('COUNT(*)', 'orders')
+            .where('order.orderStatus = :status', { status: 'completed' })
+            .andWhere('order.createdAt >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)')
+            .groupBy('month')
+            .orderBy('month', 'ASC')
+            .getRawMany();
+
+        return {
+            totalOrders,
+            totalRevenue: Number(revenueResult?.totalRevenue) || 0,
+            ordersByStatus,
+            revenueByMonth: revenueByMonth.map(row => ({
+                month: row.month,
+                revenue: Number(row.revenue) || 0,
+                orders: parseInt(row.orders) || 0,
+            })),
         };
     }
 }

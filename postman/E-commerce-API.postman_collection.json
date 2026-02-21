@@ -1319,6 +1319,161 @@
                 }
             ],
             "description": "Quản lý danh mục - Admin only (cần role admin)"
+        },
+        {
+            "name": "Admin - Orders",
+            "item": [
+                {
+                    "name": "30. Get All Orders (Admin)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/orders?page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "orders"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "orderStatus",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Lấy tất cả đơn hàng (admin)\n\n**Admin only**\n\n**Query params:**\n- page, limit (pagination)\n- orderStatus: pending | processing | shipping | completed | cancelled\n- search: tìm theo mã đơn hàng hoặc tên khách hàng"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "31. Get Order Detail (Admin)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/orders/{{orderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "orders",
+                                "{{orderId}}"
+                            ]
+                        },
+                        "description": "Lấy chi tiết đơn hàng (admin)\n\n**Admin only**\n\nKhông cần validate ownership. Bao gồm:\n- Customer info (fullName, email, phone)\n- Order items + product snapshots\n- Status history"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "32. Update Order Status",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"processing\",\n  \"note\": \"Đang xử lý đơn hàng\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "orders",
+                                "{{orderId}}",
+                                "status"
+                            ]
+                        },
+                        "description": "Cập nhật trạng thái đơn hàng\n\n**Admin only**\n\n**Body:**\n- status (required): pending → processing → shipping → completed\n- note (optional)\n\n**Transitions:**\n- pending → processing, cancelled\n- processing → shipping, cancelled\n- shipping → completed\n- completed, cancelled → (không thể chuyển)\n\n**Side effects:**\n- cancelled → restore stock\n- completed + COD → paymentStatus = paid"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "33. Get Order Stats",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/orders/stats",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "orders",
+                                "stats"
+                            ]
+                        },
+                        "description": "Thống kê đơn hàng\n\n**Admin only**\n\n**Response:**\n- totalOrders: tổng số đơn\n- totalRevenue: doanh thu (completed only)\n- ordersByStatus: { pending: N, processing: N, ... }\n- revenueByMonth: [{ month, revenue, orders }] (6 tháng gần nhất)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Quản lý đơn hàng - Admin only (cần role admin)"
         }
     ]
 }
