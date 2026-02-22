@@ -1474,6 +1474,171 @@
                 }
             ],
             "description": "Quản lý đơn hàng - Admin only (cần role admin)"
+        },
+        {
+            "name": "Admin - Users",
+            "item": [
+                {
+                    "name": "34. Get All Users (Admin)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users?page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "users"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "role",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Lấy danh sách users (admin)\n\n**Admin only**\n\n**Query params:**\n- page, limit (pagination)\n- role: customer | admin\n- search: tìm theo email hoặc tên\n\n**Response includes:** orderCount, totalSpent cho mỗi user"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "35. Get User Detail (Admin)",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/{{userId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "users",
+                                "{{userId}}"
+                            ]
+                        },
+                        "description": "Lấy chi tiết user (admin)\n\n**Admin only**\n\n**Response includes:**\n- User info (không có password)\n- orderHistory: { totalOrders, totalSpent, completedRevenue, ordersByStatus }\n- recentOrders: 5 đơn hàng gần nhất"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "36. Update User Status",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"inactive\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/{{userId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "users",
+                                "{{userId}}",
+                                "status"
+                            ]
+                        },
+                        "description": "Cập nhật status user\n\n**Admin only**\n\n**Body:** status: active | inactive\n\nKhông thể thay đổi status của chính mình (CANNOT_MODIFY_SELF)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "37. Update User Role",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"role\": \"admin\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/{{userId}}/role",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "users",
+                                "{{userId}}",
+                                "role"
+                            ]
+                        },
+                        "description": "Cập nhật role user\n\n**Admin only**\n\n**Body:** role: customer | admin\n\nKhông thể thay đổi role của chính mình (CANNOT_MODIFY_SELF)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Quản lý users - Admin only (cần role admin)"
         }
     ]
 }
