@@ -4,11 +4,18 @@ import {
     ArgumentsHost,
     HttpException,
     HttpStatus,
+    Inject,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { WinstonLoggerService } from '../logger';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+    constructor(
+        @Inject(WinstonLoggerService)
+        private readonly logger: WinstonLoggerService,
+    ) { }
+
     catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse<Response>();
@@ -46,6 +53,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
             }
         } else if (exception instanceof Error) {
             message = exception.message;
+        }
+
+        // Log exception: warn cho 4xx, error cho 5xx
+        const logMessage = `${request.method} ${request.url} ${statusCode} - ${errorCode}: ${Array.isArray(message) ? message.join(', ') : message}`;
+
+        if (statusCode >= 500) {
+            const stack = exception instanceof Error ? exception.stack : undefined;
+            this.logger.error(logMessage, stack, 'ExceptionFilter');
+        } else {
+            this.logger.warn(logMessage, 'ExceptionFilter');
         }
 
         response.status(statusCode).json({

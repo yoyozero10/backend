@@ -12,13 +12,17 @@ import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
 import { RegisterDto, LoginDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
 import { User } from '../users/entities/user.entity';
+import { WinstonLoggerService } from '../common/logger';
 
 @Injectable()
 export class AuthService {
+    private readonly context = 'AuthService';
+
     constructor(
         private usersService: UsersService,
         private jwtService: JwtService,
         private configService: ConfigService,
+        private logger: WinstonLoggerService,
     ) { }
 
     // ==================== REGISTER ====================
@@ -42,6 +46,9 @@ export class AuthService {
         });
 
         const { password, refreshToken, passwordResetToken, passwordResetExpires, ...userWithoutSensitive } = user;
+
+        this.logger.log(`Đăng ký thành công: ${user.email} (ID: ${user.id})`, this.context);
+
         return {
             message: 'Đăng ký thành công',
             user: userWithoutSensitive,
@@ -52,6 +59,7 @@ export class AuthService {
     async login(loginDto: LoginDto): Promise<{ accessToken: string; refreshToken: string; user: Partial<User> }> {
         const user = await this.usersService.findByEmail(loginDto.email);
         if (!user) {
+            this.logger.warn(`Đăng nhập thất bại - email không tồn tại: ${loginDto.email}`, this.context);
             throw new UnauthorizedException({
                 statusCode: 401,
                 errorCode: 'AUTH_INVALID_CREDENTIALS',
@@ -60,6 +68,7 @@ export class AuthService {
         }
 
         if (user.status === 'inactive') {
+            this.logger.warn(`Đăng nhập bị chặn - tài khoản bị khóa: ${user.email}`, this.context);
             throw new ForbiddenException({
                 statusCode: 403,
                 errorCode: 'AUTH_ACCOUNT_LOCKED',
@@ -69,6 +78,7 @@ export class AuthService {
 
         const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
         if (!isPasswordValid) {
+            this.logger.warn(`Đăng nhập thất bại - sai mật khẩu: ${user.email}`, this.context);
             throw new UnauthorizedException({
                 statusCode: 401,
                 errorCode: 'AUTH_INVALID_CREDENTIALS',
@@ -86,6 +96,9 @@ export class AuthService {
         await this.usersService.update(user.id, { refreshToken: hashedRefreshToken });
 
         const { password, refreshToken: _, passwordResetToken, passwordResetExpires, ...userWithoutSensitive } = user;
+
+        this.logger.log(`Đăng nhập thành công: ${user.email} (role: ${user.role})`, this.context);
+
         return {
             accessToken,
             refreshToken,
@@ -96,6 +109,7 @@ export class AuthService {
     // ==================== LOGOUT ====================
     async logout(userId: string): Promise<{ message: string }> {
         await this.usersService.update(userId, { refreshToken: null as any });
+        this.logger.log(`Đăng xuất: userId=${userId}`, this.context);
         return { message: 'Đăng xuất thành công' };
     }
 
@@ -160,13 +174,8 @@ export class AuthService {
             passwordResetExpires: expires,
         });
 
-        // Mock email sending (console.log)
-        console.log('================================================');
-        console.log('📧 [MOCK EMAIL] Password Reset Request');
-        console.log(`To: ${user.email}`);
-        console.log(`Reset Token: ${resetToken}`);
-        console.log(`Expires: ${expires.toISOString()}`);
-        console.log('================================================');
+        // Mock email sending - dùng logger thay console.log
+        this.logger.log(`📧 [MOCK EMAIL] Password Reset - To: ${user.email}, Token: ${resetToken}, Expires: ${expires.toISOString()}`, this.context);
 
         return { message: 'Nếu email tồn tại, bạn sẽ nhận được link đặt lại mật khẩu' };
     }

@@ -7,6 +7,7 @@ import { CartItem } from '../cart/entities/cart-item.entity';
 import { Product } from '../products/entities/product.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateOrderDto, GetOrdersDto, GetAdminOrdersDto, UpdateOrderStatusDto } from './dto';
+import { WinstonLoggerService } from '../common/logger';
 
 @Injectable()
 export class OrdersService {
@@ -33,7 +34,10 @@ export class OrdersService {
         @InjectRepository(User)
         private userRepository: Repository<User>,
         private dataSource: DataSource,
+        private logger: WinstonLoggerService,
     ) { }
+
+    private readonly context = 'OrdersService';
 
     /**
      * Generate unique order code: ORD-YYYYMMDD-XXXX
@@ -187,6 +191,11 @@ export class OrdersService {
                 where: { id: savedOrder.id },
                 relations: ['items', 'items.product'],
             });
+
+            this.logger.log(
+                `Đơn hàng được tạo: ${createdOrder!.orderCode} - userId=${userId} - ${orderItemsData.length} sản phẩm - Tổng: ${totalAmount.toLocaleString()}đ`,
+                this.context,
+            );
 
             return this.formatOrderResponse(createdOrder!);
         });
@@ -573,6 +582,10 @@ export class OrdersService {
                 where: { id: orderId },
                 relations: ['items', 'items.product'],
             });
+            this.logger.log(
+                `Chuyển trạng thái đơn hàng: ${order.orderCode} (${oldStatus} → ${dto.status}) - adminId=${adminId}${dto.status === 'cancelled' ? ' [CANCELLED - stock restored]' : ''}`,
+                this.context,
+            );
 
             return this.formatOrderResponse(updatedOrder!);
         });

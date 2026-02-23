@@ -9,6 +9,9 @@ import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
+import { LoggerModule } from './common/logger';
+import { HttpExceptionFilter } from './common/filters';
+import { LoggingInterceptor } from './common/interceptors';
 
 @Module({
   imports: [
@@ -31,6 +34,7 @@ import { OrdersModule } from './orders/orders.module';
       inject: [ConfigService],
     }),
 
+    LoggerModule,
     AuthModule,
     UsersModule,
     CategoriesModule,
@@ -39,6 +43,10 @@ import { OrdersModule } from './orders/orders.module';
     OrdersModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    HttpExceptionFilter,
+    LoggingInterceptor,
+  ],
 })
 export class AppModule { }
