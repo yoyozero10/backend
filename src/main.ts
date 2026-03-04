@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { WinstonLoggerService } from './common/logger';
 import { HttpExceptionFilter } from './common/filters';
@@ -35,9 +36,33 @@ async function bootstrap() {
   // Enable CORS
   app.enableCors();
 
+  // ==================== SWAGGER SETUP ====================
+  const config = new DocumentBuilder()
+    .setTitle('E-commerce API')
+    .setDescription('API Documentation cho Hệ Thống Đặt Hàng và Quản Lý Đơn Hàng Trực Tuyến')
+    .setVersion('1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
+    .addTag('Auth', 'Xác thực: Đăng ký, Đăng nhập, Token, Mật khẩu')
+    .addTag('Users', 'Quản lý profile người dùng')
+    .addTag('Products', 'Sản phẩm (Public)')
+    .addTag('Categories', 'Danh mục (Public)')
+    .addTag('Cart', 'Giỏ hàng')
+    .addTag('Orders', 'Đơn hàng')
+    .addTag('Admin - Products', 'Quản lý sản phẩm (Admin)')
+    .addTag('Admin - Categories', 'Quản lý danh mục (Admin)')
+    .addTag('Admin - Orders', 'Quản lý đơn hàng (Admin)')
+    .addTag('Admin - Users', 'Quản lý người dùng (Admin)')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
   const port = process.env.PORT ?? 3001;
   await app.listen(port);
   logger.log(`🚀 Server đang chạy tại http://localhost:${port}`, 'Bootstrap');
+  logger.log(`📖 Swagger docs: http://localhost:${port}/api/docs`, 'Bootstrap');
 }
 bootstrap();
 
