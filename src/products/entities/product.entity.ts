@@ -1,9 +1,12 @@
-import { Entity, Column, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, Index } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { Category } from '../../categories/entities/category.entity';
 import { ProductImage } from './product-image.entity';
 
 @Entity('products')
+@Index(['status'])
+@Index(['price'])
+@Index(['name'])
 export class Product extends BaseEntity {
     @Column()
     name: string;

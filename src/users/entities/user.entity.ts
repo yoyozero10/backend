@@ -1,7 +1,9 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, Index } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 
 @Entity('users')
+@Index(['status'])
+@Index(['role'])
 export class User extends BaseEntity {
     @Column({ unique: true })
     email: string;

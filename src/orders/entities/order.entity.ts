@@ -1,9 +1,11 @@
-import { Entity, Column, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, Index } from 'typeorm';
 import { BaseEntity } from '../../common/entities/base.entity';
 import { User } from '../../users/entities/user.entity';
 import { OrderItem } from './order-item.entity';
 
 @Entity('orders')
+@Index(['orderStatus'])
+@Index(['createdAt'])
 export class Order extends BaseEntity {
     @Column({ unique: true })
     orderCode: string;

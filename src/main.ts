@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { WinstonLoggerService } from './common/logger';
 import { HttpExceptionFilter } from './common/filters';
@@ -14,6 +15,9 @@ async function bootstrap() {
   // Sử dụng Winston làm logger mặc định
   const logger = app.get(WinstonLoggerService);
   app.useLogger(logger);
+
+  // Helmet - bảo vệ HTTP headers
+  app.use(helmet());
 
   // Global prefix for all routes
   app.setGlobalPrefix('api');
@@ -33,8 +37,17 @@ async function bootstrap() {
     }),
   );
 
-  // Enable CORS
-  app.enableCors();
+  // CORS với whitelist
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5173',
+      process.env.FRONTEND_URL,
+    ].filter(Boolean) as string[],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  });
 
   // ==================== SWAGGER SETUP ====================
   const config = new DocumentBuilder()

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -34,6 +36,12 @@ import { LoggingInterceptor } from './common/interceptors';
       inject: [ConfigService],
     }),
 
+    // Rate Limiting: 100 requests / 60 giây
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
+
     LoggerModule,
     AuthModule,
     UsersModule,
@@ -47,6 +55,12 @@ import { LoggingInterceptor } from './common/interceptors';
     AppService,
     HttpExceptionFilter,
     LoggingInterceptor,
+    // Rate Limiting Guard (global)
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule { }
+
