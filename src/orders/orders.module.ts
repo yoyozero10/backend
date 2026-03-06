@@ -10,19 +10,19 @@ import { OrdersController } from './orders.controller';
 import { AdminOrdersController } from './admin-orders.controller';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            Order,
-            OrderItem,
-            OrderStatusHistory,
-            Cart,
-            CartItem,
-            Product,
-            User,
-        ]),
-    ],
-    providers: [OrdersService],
-    controllers: [OrdersController, AdminOrdersController],
-    exports: [TypeOrmModule],
+  imports: [
+    TypeOrmModule.forFeature([
+      Order,
+      OrderItem,
+      OrderStatusHistory,
+      Cart,
+      CartItem,
+      Product,
+      User,
+    ]),
+  ],
+  providers: [OrdersService],
+  controllers: [OrdersController, AdminOrdersController],
+  exports: [TypeOrmModule],
 })
-export class OrdersModule { }
+export class OrdersModule {}

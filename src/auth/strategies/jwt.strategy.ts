@@ -6,7 +6,7 @@ import { UsersService } from '../../users/users.service';
 
 /**
  * JWT Strategy - Xác thực token JWT từ Authorization header
- * 
+ *
  * Luồng hoạt động:
  * 1. Extract token từ header "Authorization: Bearer <token>"
  * 2. Verify token với JWT_SECRET
@@ -15,49 +15,49 @@ import { UsersService } from '../../users/users.service';
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor(
-        private usersService: UsersService,
-        configService: ConfigService,
-    ) {
-        const secret = configService.get<string>('JWT_SECRET');
-        if (!secret) {
-            throw new Error('JWT_SECRET is not defined in environment variables');
-        }
-
-        super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            ignoreExpiration: false,
-            secretOrKey: secret,
-        });
+  constructor(
+    private usersService: UsersService,
+    configService: ConfigService,
+  ) {
+    const secret = configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new Error('JWT_SECRET is not defined in environment variables');
     }
 
-    /**
-     * Validate payload từ token đã được verify
-     * @param payload - Chứa sub (userId), email, role từ token
-     * @returns User object (không có password) hoặc throw UnauthorizedException
-     */
-    async validate(payload: { sub: string; email: string; role: string }) {
-        const user = await this.usersService.findById(payload.sub);
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: secret,
+    });
+  }
 
-        if (!user) {
-            throw new UnauthorizedException({
-                statusCode: 401,
-                errorCode: 'AUTH_INVALID_TOKEN',
-                message: 'Token không hợp lệ hoặc user không tồn tại',
-            });
-        }
+  /**
+   * Validate payload từ token đã được verify
+   * @param payload - Chứa sub (userId), email, role từ token
+   * @returns User object (không có password) hoặc throw UnauthorizedException
+   */
+  async validate(payload: { sub: string; email: string; role: string }) {
+    const user = await this.usersService.findById(payload.sub);
 
-        // Kiểm tra tài khoản bị khóa
-        if (user.status === 'inactive') {
-            throw new UnauthorizedException({
-                statusCode: 401,
-                errorCode: 'AUTH_ACCOUNT_LOCKED',
-                message: 'Tài khoản đã bị khóa',
-            });
-        }
-
-        // Return user without password - sẽ được gắn vào request.user
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
+    if (!user) {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        errorCode: 'AUTH_INVALID_TOKEN',
+        message: 'Token không hợp lệ hoặc user không tồn tại',
+      });
     }
+
+    // Kiểm tra tài khoản bị khóa
+    if (user.status === 'inactive') {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        errorCode: 'AUTH_ACCOUNT_LOCKED',
+        message: 'Tài khoản đã bị khóa',
+      });
+    }
+
+    // Return user without password - sẽ được gắn vào request.user
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
 }

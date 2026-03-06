@@ -52,7 +52,9 @@ async function bootstrap() {
   // ==================== SWAGGER SETUP ====================
   const config = new DocumentBuilder()
     .setTitle('E-commerce API')
-    .setDescription('API Documentation cho Hệ Thống Đặt Hàng và Quản Lý Đơn Hàng Trực Tuyến')
+    .setDescription(
+      'API Documentation cho Hệ Thống Đặt Hàng và Quản Lý Đơn Hàng Trực Tuyến',
+    )
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
@@ -78,4 +80,3 @@ async function bootstrap() {
   logger.log(`📖 Swagger docs: http://localhost:${port}/api/docs`, 'Bootstrap');
 }
 bootstrap();
-

@@ -7,10 +7,10 @@ import type { CartItem } from './cart-item.entity';
 
 @Entity('carts')
 export class Cart extends BaseEntity {
-    @OneToOne(() => User)
-    @JoinColumn()
-    user: User;
+  @OneToOne(() => User)
+  @JoinColumn()
+  user: User;
 
-    @OneToMany('CartItem', 'cart', { cascade: true })
-    items: CartItem[];
+  @OneToMany('CartItem', 'cart', { cascade: true })
+  items: CartItem[];
 }

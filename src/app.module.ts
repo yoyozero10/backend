@@ -37,10 +37,12 @@ import { LoggingInterceptor } from './common/interceptors';
     }),
 
     // Rate Limiting: 100 requests / 60 giây
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
 
     LoggerModule,
     AuthModule,
@@ -62,5 +64,4 @@ import { LoggingInterceptor } from './common/interceptors';
     },
   ],
 })
-export class AppModule { }
-
+export class AppModule {}

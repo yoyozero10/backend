@@ -3,7 +3,7 @@ import { WinstonLoggerService } from './winston-logger.service';
 
 @Global()
 @Module({
-    providers: [WinstonLoggerService],
-    exports: [WinstonLoggerService],
+  providers: [WinstonLoggerService],
+  exports: [WinstonLoggerService],
 })
-export class LoggerModule { }
+export class LoggerModule {}

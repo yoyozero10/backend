@@ -7,12 +7,12 @@ export const ROLES_KEY = 'roles';
 
 /**
  * Roles Decorator - Định nghĩa roles được phép truy cập route
- * 
+ *
  * Sử dụng:
  * @Roles('admin')              // Chỉ admin
  * @Roles('customer')           // Chỉ customer
  * @Roles('admin', 'customer')  // Cả admin và customer
- * 
+ *
  * Ví dụ:
  * @UseGuards(JwtAuthGuard, RolesGuard)
  * @Roles('admin')

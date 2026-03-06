@@ -6,8 +6,8 @@ import { Product } from '../../products/entities/product.entity';
 import { ProductImage } from '../../products/entities/product-image.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Category, Product, ProductImage])],
-    providers: [SeedService],
-    exports: [SeedService],
+  imports: [TypeOrmModule.forFeature([Category, Product, ProductImage])],
+  providers: [SeedService],
+  exports: [SeedService],
 })
-export class SeedModule { }
+export class SeedModule {}

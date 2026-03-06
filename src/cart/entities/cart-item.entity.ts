@@ -7,12 +7,12 @@ import type { Cart } from './cart.entity';
 
 @Entity('cart_items')
 export class CartItem extends BaseEntity {
-    @ManyToOne('Cart', 'items', { onDelete: 'CASCADE' })
-    cart: Cart;
+  @ManyToOne('Cart', 'items', { onDelete: 'CASCADE' })
+  cart: Cart;
 
-    @ManyToOne(() => Product)
-    product: Product;
+  @ManyToOne(() => Product)
+  product: Product;
 
-    @Column()
-    quantity: number;
+  @Column()
+  quantity: number;
 }

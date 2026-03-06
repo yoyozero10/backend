@@ -4,18 +4,18 @@ import { Order } from './order.entity';
 
 @Entity('order_status_history')
 export class OrderStatusHistory extends BaseEntity {
-    @ManyToOne(() => Order, { onDelete: 'CASCADE' })
-    order: Order;
+  @ManyToOne(() => Order, { onDelete: 'CASCADE' })
+  order: Order;
 
-    @Column()
-    fromStatus: string;
+  @Column()
+  fromStatus: string;
 
-    @Column()
-    toStatus: string;
+  @Column()
+  toStatus: string;
 
-    @Column({ nullable: true })
-    note?: string;
+  @Column({ nullable: true })
+  note?: string;
 
-    @Column({ nullable: true })
-    changedBy?: string;
+  @Column({ nullable: true })
+  changedBy?: string;
 }

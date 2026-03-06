@@ -12,4 +12,4 @@ import { Order } from '../orders/entities/order.entity';
   controllers: [UsersController, AdminUsersController],
   exports: [UsersService],
 })
-export class UsersModule { }
+export class UsersModule {}

@@ -8,24 +8,24 @@ import { ProductImage } from './product-image.entity';
 @Index(['price'])
 @Index(['name'])
 export class Product extends BaseEntity {
-    @Column()
-    name: string;
+  @Column()
+  name: string;
 
-    @Column('text')
-    description: string;
+  @Column('text')
+  description: string;
 
-    @Column('decimal', { precision: 10, scale: 2 })
-    price: number;
+  @Column('decimal', { precision: 10, scale: 2 })
+  price: number;
 
-    @Column({ default: 0 })
-    stock: number;
+  @Column({ default: 0 })
+  stock: number;
 
-    @Column({ type: 'enum', enum: ['active', 'inactive'], default: 'active' })
-    status: string;
+  @Column({ type: 'enum', enum: ['active', 'inactive'], default: 'active' })
+  status: string;
 
-    @ManyToOne(() => Category, category => category.products)
-    category: Category;
+  @ManyToOne(() => Category, (category) => category.products)
+  category: Category;
 
-    @OneToMany(() => ProductImage, image => image.product, { cascade: true })
-    images: ProductImage[];
+  @OneToMany(() => ProductImage, (image) => image.product, { cascade: true })
+  images: ProductImage[];
 }

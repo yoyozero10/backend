@@ -1,8 +1,8 @@
 import {
-    Injectable,
-    NestInterceptor,
-    ExecutionContext,
-    CallHandler,
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -11,26 +11,26 @@ import { WinstonLoggerService } from '../logger';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-    constructor(private readonly logger: WinstonLoggerService) { }
+  constructor(private readonly logger: WinstonLoggerService) {}
 
-    intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-        const ctx = context.switchToHttp();
-        const request = ctx.getRequest<Request>();
-        const { method, url } = request;
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const ctx = context.switchToHttp();
+    const request = ctx.getRequest<Request>();
+    const { method, url } = request;
 
-        const now = Date.now();
+    const now = Date.now();
 
-        return next.handle().pipe(
-            tap(() => {
-                const response = ctx.getResponse<Response>();
-                const statusCode = response.statusCode;
-                const responseTime = Date.now() - now;
+    return next.handle().pipe(
+      tap(() => {
+        const response = ctx.getResponse<Response>();
+        const statusCode = response.statusCode;
+        const responseTime = Date.now() - now;
 
-                this.logger.log(
-                    `${method} ${url} ${statusCode} - ${responseTime}ms`,
-                    'HTTP',
-                );
-            }),
+        this.logger.log(
+          `${method} ${url} ${statusCode} - ${responseTime}ms`,
+          'HTTP',
         );
-    }
+      }),
+    );
+  }
 }
