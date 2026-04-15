@@ -5,6 +5,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { HealthController } from './health.controller';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -31,7 +32,7 @@ import { LoggingInterceptor } from './common/interceptors';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true, // ONLY for development!
+        synchronize: configService.get('NODE_ENV') !== 'production', // ONLY for development!
       }),
       inject: [ConfigService],
     }),
@@ -52,7 +53,7 @@ import { LoggingInterceptor } from './common/interceptors';
     CartModule,
     OrdersModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [
     AppService,
     HttpExceptionFilter,

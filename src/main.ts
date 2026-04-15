@@ -60,6 +60,7 @@ async function bootstrap() {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'access-token',
     )
+    .addTag('Health', 'Kiểm tra trạng thái server')
     .addTag('Auth', 'Xác thực: Đăng ký, Đăng nhập, Token, Mật khẩu')
     .addTag('Users', 'Quản lý profile người dùng')
     .addTag('Products', 'Sản phẩm (Public)')
